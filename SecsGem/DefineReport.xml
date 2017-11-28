@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<EquipmentModel>
+  <StatusVariables>   
+    <SV ID="10022" Name="svAlarmEnabled" FormatCode="U8" Size="n" Mapping=""></SV>
+    <SV ID="10028" Name="svCurrentClock" FormatCode="ASCII" Size="16"></SV>
+    <SV ID="10029" Name="svMDLN" FormatCode="ASCII" Size="6"></SV>
+    <SV ID="10030" Name="svSOFTREV" FormatCode="ASCII" Size="6"></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+    <SV ID="" Name="" FormatCode="" Size="" Mapping=""></SV>
+  </StatusVariables>
+  <DataItemCollection>
+    <DataItem Name="RTPID" FormatCode="U4"></DataItem>
+    <DataItem Name="SVID" FormatCode="U4"></DataItem>
+  </DataItemCollection>
+  <DefinedReports>    
+    <Report RPTID="1">
+      <SVIDList>
+        <SVID ID="10028" Name="CLOCK"></SVID>
+        <SVID ID="10019" Name="CONTROLSTATE"></SVID>
+        <SVID ID="10020" Name="PREVIOUSCONTROLSTATE"></SVID>
+      </SVIDList>
+    </Report>
+    <Report RPTID="20">
+      <SVIDList>
+        <SVID ID="10022" Name="ALARMSENABLED"></SVID>
+        <SVID ID="10023" Name="ALARMSSET"></SVID>
+        <SVID ID="10024" Name="ALARMSTATE"></SVID>
+        <SVID ID="20014" Name="AlarmID"></SVID>
+      </SVIDList>
+    </Report>
+    <Report RPTID="2">
+      <SVIDList>
+        <SVID ID="10017" Name="PROCESSSTATE"></SVID>
+        <SVID ID="10018" Name="PREVIOUSPROCESSSTATE"></SVID>
+        <SVID ID="10021" Name="LinkState"></SVID>
+      </SVIDList>
+    </Report>
+    <Report RPTID="10">
+      <SVIDList>
+        <SVID ID="10013" Name="N/A"></SVID>
+      </SVIDList>
+    </Report>
+    <Report RPTID="25">
+      <SVIDList>
+        <SVID ID="10031" Name="PPEXECNAME"></SVID>
+        <SVID ID="10032" Name="PPError"></SVID>
+        <SVID ID="10033" Name="PPFormat"></SVID>
+      </SVIDList>
+    </Report>
+    <Report RPTID="30">
+      <SVIDList>
+        <SVID ID="20018" Name="N/A"></SVID>
+      </SVIDList>
+    </Report>
+  </DefinedReports>
+  <LinkedReport>
+    <CEIDList>
+      <CEID ID="40030" Description="Equipment_Offline_Transition_Done">
+        <ReportList>
+          <Report ID="1"></Report>
+        </ReportList>
+      </CEID>               
+      <CEID ID="40031" Description="Control_State_Local_Transition_Done">
+        <ReportList>
+          <Report ID="1"></Report>
+        </ReportList>
+      </CEID>    
+      <CEID ID="40032" Description="Control_State_Remote_Transition_Done">
+            <ReportList>
+              <Report ID="1"></Report>
+            </ReportList>
+      </CEID>            
+      <CEID ID="40033" Description="Process_State_Changed">
+            <ReportList>
+              <Report ID="2"></Report>
+            </ReportList>
+      </CEID>
+      <CEID ID="40034" Description="Alarm_Detected">
+            <ReportList>
+              <Report ID="20"></Report>
+            </ReportList>
+      </CEID> 
+      <CEID ID="40035" Description="Alarm_Cleared">
+            <ReportList>
+              <Report ID="20"></Report>
+            </ReportList>
+      </CEID>
+      <CEID ID="40036" Description="Equipment_Constant_Changed"></CEID>
+      <CEID ID="40037" Description="S10_Acknowledge_Confirmed"></CEID>
+      <CEID ID="40041" Description="Process_Program_Changed">
+        <ReportList>
+          <Report ID="2"></Report>
+          <Report ID="10"></Report>
+          <Report ID="25"></Report>
+          <Report ID="30"></Report>
+        </ReportList>
+      </CEID>
+      <CEID ID="40042" Description="Process_Program_Selected">
+        <ReportList>
+          <Report ID="2"></Report>
+          <Report ID="10"></Report>
+          <Report ID="25"></Report>
+          <Report ID="30"></Report>
+        </ReportList>
+      </CEID>
+      <CEID ID="40101" Description="Lot_Started"></CEID>  
+      <CEID ID="40102" Description="Lot_Completed"></CEID>
+      <CEID ID="40103" Description="ceWaferLoading"></CEID>            
+      <CEID ID="40104" Description="ceWaferUnloading"></CEID>
+      <CEID ID="40105" Description="ceMZloading"></CEID>
+      <CEID ID="40107" Description="ceTray1Loading"></CEID>
+      <CEID ID="40108" Description="ceTray2Loading"></CEID>
+      <CEID ID="40109" Description="ceTray3Loading"></CEID>
+      <CEID ID="40110" Description="ceTray1Unloading"></CEID>
+      <CEID ID="40111" Description="ceTray2Unloading"></CEID>
+      <CEID ID="40112" Description="ceTray3Unloading"></CEID>
+      <CEID ID="40113" Description="ceTransferEvent"></CEID>
+    </CEIDList>
+  </LinkedReport>
+</EquipmentModel>
