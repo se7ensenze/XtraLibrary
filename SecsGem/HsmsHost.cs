@@ -431,16 +431,24 @@ namespace XtraLibrary.SecsGem
 
         private void HsmsDriver_BeginAccept() {
 
+            //lock this function
+            //check if the function is already working by other thread
+            //https://docs.microsoft.com/en-us/dotnet/api/system.threading.interlocked.exchange?view=netframework-4.7.2
+            //Sets a 32-bit signed integer to a specified value and returns the original value, as an atomic operation.
             if (Interlocked.Exchange(ref m_HsmsAccepting, 1) != 0)
             {
+                //try to set 1 to variable
+                //if default value is 1, it's mean this function is being execute
                 return;
             }
 
+            //close socket
             if (m_SocketWorker != null && m_SocketWorker.Connected)
             {
                 m_SocketWorker.Close();
             }
 
+            //start listening if not listening
             if (m_SocketListener == null || !m_SocketListener.IsBound)
             {
                 m_SocketListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -450,14 +458,21 @@ namespace XtraLibrary.SecsGem
 
             try
             {
+                //accept new socket connection
                 m_SocketListener.BeginAccept(HsmsDriver_BeginAcceptCallback, m_SocketListener);
             }
-            catch(SocketException se)
+            catch (SocketException se)
             {
+                //this port is already opened
                 if (se.SocketErrorCode == SocketError.AddressAlreadyInUse)
                 {
                     throw se;
                 }
+            }
+            finally
+            {
+                //clear locking
+                m_HsmsAccepting = 0;
             }
         }
 
@@ -527,7 +542,7 @@ namespace XtraLibrary.SecsGem
 
         private void SendSeparateRequest()
         {
-            Send_Request_ControlMessage(SType.SelectReq);
+            Send_Request_ControlMessage(SType.SeparateReq);
         }
 
         private void Send_Request_ControlMessage(SType sType)
