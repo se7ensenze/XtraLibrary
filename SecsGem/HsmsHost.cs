@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Threading;
+using System.Diagnostics;
 
 namespace XtraLibrary.SecsGem
 {
@@ -86,6 +87,7 @@ namespace XtraLibrary.SecsGem
 
         private void ChangeHsmsState(HsmsState newState)
         {
+            Debug.Print("ChangeHsmsState to " + newState.ToString());
             lock (m_Locker)
             {
                 if (m_State != newState)
@@ -104,8 +106,7 @@ namespace XtraLibrary.SecsGem
         protected override void ProtectedSend(byte[] data)
         {
             if (m_State != HsmsState.SELECTED)
-            {
-                
+            {                
                 throw new Exception("HSMS State is not SELECTED");
             }
             SendBytes(data);
@@ -133,13 +134,15 @@ namespace XtraLibrary.SecsGem
 
         public override void Connect()
         {
+            Debug.Print("Connect");
+
             T5_Timer_Stop();
             T6_Timer_Stop();
             T7_Timer_Stop();
             LinkTest_Timer_Stop();
 
-            ChangeHsmsState(HsmsState.NOT_CONNECTED);
-            
+            m_KeepAlive = true;
+
             if (m_Parameters.Mode == HsmsConnectProcedure.ACTIVE)
             {
                 HsmsDriver_BeginConnect();
@@ -154,12 +157,16 @@ namespace XtraLibrary.SecsGem
 
         public override void Disconnect()
         {
-
+            Debug.Print("Disconnect");
             T5_Timer_Stop();
             T6_Timer_Stop();
             T7_Timer_Stop();
             LinkTest_Timer_Stop();
-            
+
+            m_KeepAlive = false;
+
+            ChangeHsmsState(HsmsState.NOT_CONNECTED);
+
             if (m_SocketWorker != null)
             {
                 if (m_SocketWorker.Connected)
@@ -176,7 +183,6 @@ namespace XtraLibrary.SecsGem
                 m_SocketListener = null;
             }
 
-            ChangeHsmsState(HsmsState.NOT_CONNECTED);
         }
 
         #endregion
@@ -201,6 +207,7 @@ namespace XtraLibrary.SecsGem
         private Socket m_SocketListener;
 
         private object m_Locker;
+        private bool m_KeepAlive;
 
         #endregion
 
@@ -231,6 +238,7 @@ namespace XtraLibrary.SecsGem
 
         void m_Timer_T8_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("m_Timer_T8_Elapsed");
             WriteHsmsLog(string.Format("T8 Timedout [{0} sec]", m_Parameters.T8_Interval));
             m_Timer_T8.Stop();
             //do it job
@@ -240,33 +248,39 @@ namespace XtraLibrary.SecsGem
 
         private void T8_Timer_Start()
         {
+            Debug.Print("T8_Timer_Start");
             m_Timer_T8.Interval = m_Parameters.T8_Interval * 1000;
             m_Timer_T8.Start();
         }
 
         private void T8_Timer_Stop()
         {
+            Debug.Print("T8_Timer_Stop");
             m_Timer_T8.Stop();
         }
 
         private void T6_Timer_Start()
         {
+            Debug.Print("T6_Timer_Start");
             m_Timer_T6.Interval = m_Parameters.T6_Interval * 1000;
             m_Timer_T6.Start();
         }
 
         private void T6_Timer_Stop() {
+            Debug.Print("T6_Timer_Stop");
             m_Timer_T6.Stop();
         }
 
         void m_Timer_T6_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("m_Timer_T6_Elapsed");
             WriteHsmsLog(string.Format("T6 Timedout [{0} sec]", m_Parameters.T6_Interval));
             T5_Timer_Start();
         }
 
         void m_Timer_Linktest_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("m_Timer_Linktest_Elapsed");
             m_Timer_Linktest.Stop();
             SendLinkTestRequest();
             T6_Timer_Start();
@@ -274,6 +288,7 @@ namespace XtraLibrary.SecsGem
 
         void m_Timer_T7_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("m_Timer_T7_Elapsed");
             WriteHsmsLog(string.Format("T7 Timedout [{0} sec]", m_Parameters.T7_Interval));
             m_Timer_T7.Stop();
             ChangeHsmsState(HsmsState.NOT_CONNECTED);
@@ -282,6 +297,7 @@ namespace XtraLibrary.SecsGem
 
         void T3_Timer_Start(uint tid)
         {
+            Debug.Print("T3_Timer_Start [TID :=" + tid.ToString() + "]");
             lock (m_Locker)
             {
                 T3Timer timer_t3 = new T3Timer(tid);
@@ -294,6 +310,7 @@ namespace XtraLibrary.SecsGem
 
         void T3_Timer_Stop(uint tid)
         {
+            Debug.Print("T3_Timer_Stop");
             lock (m_Locker)
             {
                 if (m_T3Hash.ContainsKey(tid))
@@ -307,6 +324,7 @@ namespace XtraLibrary.SecsGem
 
         void T3_Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("T3_Timer_Elapsed");
             T3Timer timer_t3 = (T3Timer)sender;
             timer_t3.Stop();
                         
@@ -327,33 +345,39 @@ namespace XtraLibrary.SecsGem
 
         void m_Timer_T5_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            Debug.Print("m_Timer_T5_Elapsed");
             WriteHsmsLog(string.Format("T5 Timedout [{0} sec]", m_Parameters.T5_Interval));
             m_Timer_T5.Stop();
             //try to re-connect to ACTIVE
             HsmsDriver_BeginConnect();
         }
 
-        private void T5_Timer_Start() {        
+        private void T5_Timer_Start() {
+            Debug.Print("T5_Timer_Start");
             m_Timer_T5.Interval = m_Parameters.T5_Interval * 1000;
             m_Timer_T5.Start();
         }
 
         private void T5_Timer_Stop()
         {
+            Debug.Print("T5_Timer_Stop");
             m_Timer_T5.Stop();
         }
 
         private void T7_Timer_Start() {
+            Debug.Print("T7_Timer_Start");
             m_Timer_T7.Interval = m_Parameters.T7_Interval * 1000;
             m_Timer_T7.Start();
         }
 
         private void T7_Timer_Stop() {
+            Debug.Print("T7_Timer_Stop");
             m_Timer_T7.Stop();
         }
 
         private void LinkTest_Timer_Start()
         {
+            Debug.Print("LinkTest_Timer_Start");
             if (m_Parameters.LinktestEnabled)
             {
                 m_Timer_Linktest.Interval = m_Parameters.Linktest_Interval * 1000;
@@ -363,6 +387,7 @@ namespace XtraLibrary.SecsGem
 
         private void LinkTest_Timer_Stop()
         {
+            Debug.Print("LinkTest_Timer_Stop");
             m_Timer_Linktest.Stop();
         }
 
@@ -374,6 +399,7 @@ namespace XtraLibrary.SecsGem
         
         private void HsmsDriver_BeginConnect()
         {
+            Debug.Print("HsmsDriver_BeginConnect");
             //prevent HsmsDriver_BeginConnect to be called again while connecting
             //if original value == 0 the go
             if (Interlocked.Exchange(ref m_HsmsIsConnecting, 1) != 0) 
@@ -395,12 +421,12 @@ namespace XtraLibrary.SecsGem
                 
         private void HsmsDriver_BeginConnectCallback(IAsyncResult ar)
         {
-
+            Debug.Print("HsmsDriver_BeginConnectCallback");
             Interlocked.Exchange(ref m_HsmsIsConnecting, 0);
 
             Socket sck = (Socket)ar.AsyncState;
 
-            if (sck.Connected)
+            if (m_KeepAlive && sck.Connected)
             {
                 sck.EndConnect(ar);
                 //change state to NOT_SELECTED
@@ -430,7 +456,7 @@ namespace XtraLibrary.SecsGem
         private int m_HsmsAccepting = 0;
 
         private void HsmsDriver_BeginAccept() {
-
+            Debug.Print("HsmsDriver_BeginAccept");
             //lock this function
             //check if the function is already working by other thread
             //https://docs.microsoft.com/en-us/dotnet/api/system.threading.interlocked.exchange?view=netframework-4.7.2
@@ -478,23 +504,27 @@ namespace XtraLibrary.SecsGem
 
         private void HsmsDriver_BeginAcceptCallback(IAsyncResult ar)
         {
+            Debug.Print("HsmsDriver_BeginAcceptCallback");
             Interlocked.Exchange(ref m_HsmsAccepting, 0);
 
-            try
+            if (m_KeepAlive)
             {
-                m_SocketWorker = m_SocketListener.EndAccept(ar);
+                try
+                {
+                    m_SocketWorker = m_SocketListener.EndAccept(ar);
+                }
+                catch (SocketException)
+                {
+                    ChangeHsmsState(HsmsState.NOT_CONNECTED);
+                    return;
+                }
+                //hsms state > connect but not select
+                ChangeHsmsState(HsmsState.NOT_SELECTED);
+                //start T7
+                T7_Timer_Start();
+                //wait Select.Req   
+                WaitForMessage_Header(m_SocketWorker);
             }
-            catch(SocketException)
-            {
-                ChangeHsmsState(HsmsState.NOT_CONNECTED);
-                return;
-            }
-            //hsms state > connect but not select
-            ChangeHsmsState(HsmsState.NOT_SELECTED);
-            //start T7
-            T7_Timer_Start();
-            //wait Select.Req   
-            WaitForMessage_Header(m_SocketWorker);
         }
         
         #endregion
@@ -560,18 +590,14 @@ namespace XtraLibrary.SecsGem
 
         private void WaitForMessage_Header(Socket sck)
         {
+            Debug.Print("WaitForMessage_Header");
             byte[] header = new byte[14];
             WaitForMessage_Header(sck, header, 0);
         }
 
         private void WaitForMessage_Header(Socket sck, byte[] header, int headerStartIndex)
         {
-            //was stop
-            if (sck == null || m_State == HsmsState.NOT_CONNECTED)
-            {
-                return;
-            }
-
+            Debug.Print("WaitForMessage_Header overload 1");
             if (sck.Connected)
             {
 
@@ -589,7 +615,7 @@ namespace XtraLibrary.SecsGem
                 }
                 catch (ObjectDisposedException)
                 {
-                    ContinueMakeConnection();
+                    if(m_KeepAlive) ContinueMakeConnection();
                 }              
                 
             }
@@ -597,6 +623,7 @@ namespace XtraLibrary.SecsGem
 
         private void ContinueMakeConnection()
         {
+            Debug.Print("ContinueMakeConnection");
             ChangeHsmsState(HsmsState.NOT_CONNECTED);
 
             T6_Timer_Stop();
@@ -616,18 +643,11 @@ namespace XtraLibrary.SecsGem
 
         private void WaitForMessage_Header_Callback(IAsyncResult ar)
         {
+            Debug.Print("WaitForMessage_Header_Callback");
             SocketStateHolder holder = (SocketStateHolder)ar.AsyncState;
 
             Socket sck = holder.Socket;            
-
-            if (!sck.Connected)
-            {
-                ContinueMakeConnection();
-                return;
-            }
-
-            byte[] header = holder.Header;
-
+            
             int byteCount = 0;
 
             try
@@ -636,11 +656,15 @@ namespace XtraLibrary.SecsGem
             }
             catch (SocketException se)
             {
-
                 if (se.SocketErrorCode == SocketError.ConnectionReset)
                 {
-                    ContinueMakeConnection();
+                    if (m_KeepAlive) ContinueMakeConnection();
                 }
+                return;
+            }
+            catch (ObjectDisposedException)
+            {
+                if (m_KeepAlive) ContinueMakeConnection();
                 return;
             }
 
@@ -648,6 +672,7 @@ namespace XtraLibrary.SecsGem
                 return;
             }
 
+            byte[] header = holder.Header;
             holder.RecvStartIndex += byteCount;               
             
             if (holder.RecvStartIndex == header.Length)
@@ -711,7 +736,7 @@ namespace XtraLibrary.SecsGem
                             LinkTest_Timer_Start();
                             break;
                         case SType.SeparateReq:
-                            ContinueMakeConnection();
+                            if (m_KeepAlive) ContinueMakeConnection();
                             break;
                         default:
                             //unknow
@@ -736,6 +761,7 @@ namespace XtraLibrary.SecsGem
         
         private void WaitForMessage_Body(Socket sck, byte[] header, byte[] body, int bodyStartIndex)
         {
+            Debug.Print("WaitForMessage_Body");
             if (sck.Connected)
             {
 
@@ -753,16 +779,10 @@ namespace XtraLibrary.SecsGem
 
         private void WaitForMessage_Body_Callback(IAsyncResult ar)
         {
+            Debug.Print("WaitForMessage_Body_Callback");
             SocketStateHolder holder = (SocketStateHolder)ar.AsyncState;
             Socket sck = holder.Socket;
 
-            if (!sck.Connected)
-            {
-                return;
-            }
-
-            byte[] header = holder.Header;
-            byte[] body = holder.Body;
             
             //***********************
 
@@ -776,11 +796,18 @@ namespace XtraLibrary.SecsGem
             {
                 if (se.SocketErrorCode == SocketError.ConnectionReset)
                 {
-                    ContinueMakeConnection();
+                    if (m_KeepAlive) ContinueMakeConnection();
                 }
                 return;
             }
+            catch (ObjectDisposedException)
+            {
+                if (m_KeepAlive) ContinueMakeConnection();
+                return;
+            }
 
+            byte[] header = holder.Header;
+            byte[] body = holder.Body;
             holder.RecvStartIndex += rcvByteCount;
 
             if (holder.RecvStartIndex == body.Length)
