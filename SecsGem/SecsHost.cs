@@ -28,6 +28,7 @@ namespace XtraLibrary.SecsGem
 
         private SecsItemManager m_ItemManager;
         private Dictionary<uint, SecsMessageBase> m_SecsTransaction;
+        private Dictionary<uint, SecondarySecsMessageEventHandler> c_CustomSecondaryMessageCallback;
         
         private ushort m_DeviceId;
         private uint m_TransactionIdSeed;
@@ -100,6 +101,7 @@ namespace XtraLibrary.SecsGem
             m_ItemManager = new SecsItemManager();
             m_DeviceId = 0;
             m_SecsTransaction = new Dictionary<uint, SecsMessageBase>();
+            c_CustomSecondaryMessageCallback = new Dictionary<uint, SecondarySecsMessageEventHandler>();
             m_TransactionIdSeed = 0;
 
             m_SyncContext = SynchronizationContext.Current;
@@ -280,6 +282,11 @@ namespace XtraLibrary.SecsGem
 
         public void Send(SecsMessageBase msg)
         {
+            Send(msg, null);
+        }
+
+        public void Send(SecsMessageBase msg, SecondarySecsMessageEventHandler callback)
+        {
             msg.DeviceId = m_DeviceId;
 
             bool isPrimary = msg.NeedReply && ((msg.Function & 0x01) == 0x01);
@@ -288,6 +295,7 @@ namespace XtraLibrary.SecsGem
             {
                 //get new transaction id
                 msg.TransactionId = GetNextTransactionId();
+
                 //register T3     
                 lock (m_Locker)
                 {
@@ -297,15 +305,24 @@ namespace XtraLibrary.SecsGem
                     }
                     m_SecsTransaction.Add(msg.TransactionId, msg);
                 }
+
+                if (callback != null)
+                {
+                    if (c_CustomSecondaryMessageCallback.ContainsKey(msg.TransactionId))
+                    {
+                        c_CustomSecondaryMessageCallback.Remove(msg.TransactionId);
+                    }
+                    c_CustomSecondaryMessageCallback.Add(msg.TransactionId, callback);
+                }
             }
 
 
-           //TraceSmlLog(msg, DirectionType.Sent);
+            //TraceSmlLog(msg, DirectionType.Sent);
             OnSending(msg, isPrimary);
             byte[] data = m_Parser.GetBytes(msg);
             ProtectedSend(data);
             //OnSent(msg);
-         TraceSmlLog(msg, DirectionType.Sent);        //000783 Change Position, Send without Error then Log Show
+            TraceSmlLog(msg, DirectionType.Sent);
         }
 
         public void Reply(SecsMessageBase primary, SecsMessageBase secondaryMessage)
@@ -407,8 +424,21 @@ namespace XtraLibrary.SecsGem
                     }
                     else
                     {
-                        //should post as asynchronouse
-                        PostEvent_ReceivedSecondaryMessage(new SecondarySecsMessageEventArgs(priMsg, msg));
+                        //custom callback checking
+                        if (c_CustomSecondaryMessageCallback.ContainsKey(priMsg.TransactionId))
+                        {
+                            //get callback from dictionary
+                            SecondarySecsMessageEventHandler callback = c_CustomSecondaryMessageCallback[priMsg.TransactionId];
+                            //remove callnack from dictionary
+                            c_CustomSecondaryMessageCallback.Remove(priMsg.TransactionId);
+                            //execute callback
+                            callback(this, new SecondarySecsMessageEventArgs(priMsg, msg));
+                        }
+                        else
+                        {
+                            //should post as asynchronouse
+                            PostEvent_ReceivedSecondaryMessage(new SecondarySecsMessageEventArgs(priMsg, msg));
+                        }
                     }
                 }
                 else
